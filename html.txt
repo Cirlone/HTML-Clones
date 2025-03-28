@@ -1,0 +1,89 @@
+import { useState } from 'react'
+import { Button } from "/components/ui/button"
+import { Card, CardContent, CardHeader, CardTitle } from "/components/ui/card"
+import { Label } from "/components/ui/label"
+import { Input } from "/components/ui/input"
+
+const DocumentGroupingApp = () => {
+  const [files, setFiles] = useState<File[]>([])
+  const [groupedDocuments, setGroupedDocuments] = useState<{ [key: string]: File[] }>({})
+
+  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const uploadedFiles = Array.from(event.target.files || [])
+    setFiles(uploadedFiles)
+  }
+
+  const groupDocuments = () => {
+    const documentGroups: { [key: string]: File[] } = {}
+
+    files.forEach(file => {
+      const reader = new FileReader()
+      reader.onload = (e) => {
+        const content = e.target?.result as string
+        const hash = simpleHash(content)
+        if (!documentGroups[hash]) {
+          documentGroups[hash] = []
+        }
+        documentGroups[hash].push(file)
+        setGroupedDocuments(documentGroups)
+      }
+      reader.readAsText(file)
+    })
+  }
+
+  const simpleHash = (content: string): string => {
+    let hash = 0
+    for (let i = 0; i < content.length; i++) {
+      const char = content.charCodeAt(i)
+      hash = ((hash << 5) - hash) + char
+      hash |= 0 // Convert to 32bit integer
+    }
+    return hash.toString()
+  }
+
+  return (
+    <div className="p-4">
+      <Card className="w-full max-w-4xl mx-auto">
+        <CardHeader>
+          <CardTitle className="text-2xl font-bold">Document Grouping App</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="mb-4">
+            <Label htmlFor="file-upload">Upload HTML Files</Label>
+            <Input
+              id="file-upload"
+              type="file"
+              multiple
+              accept=".html"
+              onChange={handleFileChange}
+              className="mt-2"
+            />
+          </div>
+          <Button onClick={groupDocuments} disabled={files.length === 0}>
+            Group Documents
+          </Button>
+        </CardContent>
+      </Card>
+      <div className="mt-8">
+        {Object.entries(groupedDocuments).map(([hash, documents]) => (
+          <Card key={hash} className="w-full max-w-4xl mx-auto mt-4">
+            <CardHeader>
+              <CardTitle>Group {hash}</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <ul>
+                {documents.map((doc, index) => (
+                  <li key={index} className="mb-2">
+                    {doc.name}
+                  </li>
+                ))}
+              </ul>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+    </div>
+  )
+}
+
+export default DocumentGroupingApp
